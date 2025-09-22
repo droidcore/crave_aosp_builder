@@ -150,7 +150,7 @@ jobs:
         "DerpFest 14.0")
           export PROJECTFOLDER="/crave-devspaces/DerpFest14"
           export PROJECTID="64"
-          export REPO_INIT="repo init -u https://github.com/DerpFest-AOSP/manifest.git -b 14 --depth=1"
+          export REPO_INIT="repo init -u https://github.com/Lunaris-AOSP/android -b 16 --git-lfs"
         ;;
         "LineageOS 21.0")
           export PROJECTFOLDER="/crave-devspaces/Lineage21"
