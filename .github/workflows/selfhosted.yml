@@ -5,65 +5,15 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-name: Crave Builder(self-hosted)
+name: Crave Builder (self-hosted)
 on:
   workflow_dispatch:
     # Various inputs to simplify usage of workflow.
     inputs:
-      BASE_PROJECT:
-        description: 'Choose a base project:'
+      CRAVE_CMD:
+        description: 'The commands for running crave'
         required: true
-        default: 'LineageOS 22.1'
-        type: choice
-        options:
-          - 'LineageOS 20.0'
-          - 'LineageOS 21.0'
-          - 'LineageOS 22.1'
-          - 'ArrowOS 13.1'
-          - 'DerpFest 14.0'
-          - 'CipherOS 14'
-          - 'PixelOS 15'
-          - 'RisingOS 15 Revived'
-          - 'LineageOS 18.1'
-          - 'LineageOS 16.0'
-          - 'CyanogenMOD 14.1'
-          - 'AOSP'
-      BUILD_DIFFERENT_ROM:
-        description: "Command to initialize a different 'repo' project:"
-        required: true
-        default: "repo init -u https://github.com/Lunaris-AOSP/android -b 16 --git-lfs"
-      REMOVALS:
-        description: "Folders to be removed before syncing:"
-        required: false
-      LOCAL_MANIFEST:
-        description: "Personal local manifest [repository or raw]:"
-        required: true
-        default: 'https://github.com/droidcore/local_manifest'
-      LOCAL_MANIFEST_BRANCH:
-        description: "Personal local manifest's branch:"
-        required: false
-        default: 'lineages-23.0'
-      DEVICE_NAME:
-        description: "Device's codename:"
-        required: true
-        default: "peridot"
-      PRODUCT_NAME:
-        description: "Product to build:"
-        required: true
-        default: "peridot"
-      BUILD_COMMAND:
-        description: 'Command to be used for compiling:'
-        required: true
-        default: 'm lunaris'
-      BUILD_TYPE:
-        description: 'Type of build:'
-        required: true
-        default: 'user'
-        type: choice
-        options: 
-        - 'eng'
-        - 'userdebug'
-        - 'user' 
+        default: 'curl -LSs https://raw.githubusercontent.com/rsuplaygrnd/krep_skrip/refs/heads/risingOS/build.sh | bash -'
       CLEAN_BUILD:
         description: 'Build with a clean workspace?'
         required: true
