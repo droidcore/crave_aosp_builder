@@ -13,7 +13,7 @@ on:
       CRAVE_CMD:
         description: 'The commands for running crave'
         required: true
-        default: 'curl -LSs https://raw.githubusercontent.com/rsuplaygrnd/krep_skrip/refs/heads/risingOS/build.sh | bash -'
+        default: 'curl -LSs https://github.com/droidcore/ssc/raw/refs/heads/main/crave.sh | bash -'
       CLEAN_BUILD:
         description: 'Build with a clean workspace?'
         required: true
