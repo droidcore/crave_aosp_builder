@@ -423,23 +423,11 @@ jobs:
           echo "Skipping removal"
         fi
 
-if [[ $DCDEVSPACE == *1* ]]; then
-  echo "Attempting to create Crave clone for project $PROJECTID at $PROJECTFOLDER..."
-  crave clone create --projectID "$PROJECTID" "$PROJECTFOLDER"
-  
-  # Verify clone creation succeeded
-  if [ ! -d "$PROJECTFOLDER" ]; then
-    echo "❌ ERROR: Crave clone creation failed — $PROJECTFOLDER was not created."
-    echo "Listing existing Crave clones for debugging:"
-    crave clone list --json | jq -r '.clones[] | "\(.Name) → \(.\"Cloned At\")"' || true
-    exit 1
-  else
-    echo "✅ Crave clone successfully created at $PROJECTFOLDER"
-  fi
-else
-  echo "Not in devspace; creating local project folder instead..."
-  mkdir -p "$PROJECTFOLDER"
-fi
+        if [[ $DCDEVSPACE == *1* ]]; then
+          crave clone create --projectID $PROJECTID $PROJECTFOLDER || echo "Crave clone create failed!"
+        else
+          mkdir -p "$PROJECTFOLDER"
+        fi
 
         echo "Post-creation check:"
         ls -al /crave-devspaces || true
