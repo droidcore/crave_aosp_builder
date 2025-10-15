@@ -397,41 +397,37 @@ jobs:
           fi
         )
 
-# Create a project folder
+        # Create a project folder
     - name: Create Project Folders
       run: |
         echo "DCDEVSPACE status: ${DCDEVSPACE}"
         if [[ $DCDEVSPACE != *1* ]]; then
+
+          #curl -s https://raw.githubusercontent.com/accupara/crave/master/get_crave.sh | bash -s -- 
+
+          #mkdir -p ${HOME}/bin/
+          #mv ${PWD}/crave ${HOME}/bin/ 
+          #sudo ln -sf /home/${USER}/bin/crave /usr/bin/crave; sudo chmod +x /usr/bin/crave 
+
           echo "Symlinking devspace folder"
           mkdir -p devspace
           sudo mkdir -p /crave-devspaces
-          
-          # ✅ FIXED: use $(pwd) instead of ${pwd}
-          sudo ln -sf "$(pwd)/devspace" /crave-devspaces
+          sudo ln -sf ${pwd}/devspace /crave-devspaces
           sudo chmod 777 /crave-devspaces
-
-          echo "Symlink created. Debug info:"
-          echo "PWD: $(pwd)"
-          ls -al /crave-devspaces || true
         else
           echo "We are already running in devspace... Skipping Symlinks"
         fi
-
         if grep -q "$PROJECTFOLDER" <(crave clone list --json | jq -r '.clones[]."Cloned At"') || [[ "${DCDEVSPACE}" == "1" ]]; then
           crave clone destroy -y $PROJECTFOLDER || echo "Error removing $PROJECTFOLDER"
         else          
-          echo "Skipping removal"
+        echo "Skipping removal"
         fi
 
         if [[ $DCDEVSPACE == *1* ]]; then
           crave clone create --projectID $PROJECTID $PROJECTFOLDER || echo "Crave clone create failed!"
         else
-          mkdir -p "$PROJECTFOLDER"
+          mkdir -p $PROJECTFOLDER
         fi
-
-        echo "Post-creation check:"
-        ls -al /crave-devspaces || true
-        ls -al "$PROJECTFOLDER" || echo "⚠️ Project folder missing!"
         
       # Check-out in order to access the repository's files.
     - name: Check-out to repository
@@ -440,7 +436,7 @@ jobs:
       # Set-up a spearate directory for the device.
     - name: Set-up workspace environment
       run: |
-        cd /crave-devspaces/Lineage22
+        cd $PROJECTFOLDER
         mkdir ${{ github.event.inputs.DEVICE_NAME }}
         cd ${{ github.event.inputs.DEVICE_NAME }}
       continue-on-error: true
@@ -481,7 +477,7 @@ jobs:
       # Initialize the previously choosen 'repo' project.
     - name: Set the 'crave' project
       run: |
-        cd /crave-devspaces/Lineage22
+        cd $PROJECTFOLDER
         if grep -q "$PROJECTFOLDER" <(crave clone list --json | jq -r '.clones[]."Cloned At"') || [[ "${DCDEVSPACE}" == "1" ]]; then
           echo "Using Crave Clone... skipping"
         else
@@ -503,7 +499,7 @@ jobs:
     - name: Start compilation through 'crave'
       if: ${{ github.event.inputs.BUILD_DIFFERENT_ROM != 'skip' }}
       run: |
-        cd /crave-devspaces/Lineage22
+        cd $PROJECTFOLDER
         
         jq '.projects = []' ~/crave.conf > tmp && mv tmp ~/crave.conf
         if [ "${{ github.event.inputs.CLEAN_BUILD }}" == "yes" ]; then
@@ -599,14 +595,14 @@ jobs:
     - name: Execute if the job is cancelled
       if: ${{ cancelled() }}
       run: |
-        cd /crave-devspaces/Lineage22
+        cd $PROJECTFOLDER
         crave stop --all
 
       # Upload '.zip's and '.img's directly from 'crave' ssh.
     - name: Upload build artifact(s)
       continue-on-error: true
       run: |
-        cd /crave-devspaces/Lineage22
+        cd $PROJECTFOLDER
         echo "${{ secrets.GITHUB_TOKEN }}" > token.txt
         crave push token.txt -d $(crave ssh -- pwd | grep -v Select | sed -s 's/\r//g')/
         crave ssh -- "export GH_UPLOAD_LIMIT="${{ secrets.GH_UPLOAD_LIMIT }}"; bash /opt/crave/github-actions/upload.sh '${{ github.run_id }}' '${{ github.event.inputs.DEVICE_NAME }}'  '${{ github.repository }}' '${{ github.event.inputs.PRODUCT_NAME }}-${{ github.run_id }}' '${{ secrets.EXTRA_FILES }}'"
@@ -616,7 +612,7 @@ jobs:
       if: ${{ failure() }}
       id: errorlog
       run: |
-        cd /crave-devspaces/Lineage22
+        cd $PROJECTFOLDER
         crave ssh -- sleep 1
         crave pull out/error.log
         echo "Displaying out/error.log"
@@ -625,7 +621,7 @@ jobs:
       # Upload to Telegram
     - name: Upload Using telegram-upload
       run: |
-        cd /crave-devspaces/Lineage22
+        cd $PROJECTFOLDER
         crave ssh -- "export TG_UPLOAD_LIMIT="${{ secrets.TG_UPLOAD_LIMIT }}"; bash /opt/crave/telegram/upload.sh '${{ github.event.inputs.DEVICE_NAME }}' '${{ secrets.EXTRA_FILES }}'"
       continue-on-error: true
 
@@ -633,8 +629,8 @@ jobs:
     - name: Destroy Crave Clone
       if: ${{ always() }}
       run: |
-        if grep -q "/crave-devspaces/Lineage22" <(crave clone list --json | jq -r '.clones[]."Cloned At"') || [[ "${DCDEVSPACE}" == "1" ]]; then
-          crave clone destroy -y /crave-devspaces/Lineage22 || echo "Error removing $PROJECTFOLDER"
+        if grep -q "$PROJECTFOLDER" <(crave clone list --json | jq -r '.clones[]."Cloned At"') || [[ "${DCDEVSPACE}" == "1" ]]; then
+          crave clone destroy -y $PROJECTFOLDER || echo "Error removing $PROJECTFOLDER"
         else          
           echo "Skipping removal"
         fi
