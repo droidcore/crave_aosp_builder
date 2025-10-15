@@ -1,13 +1,13 @@
+#
 # Copyright (C) 2024-2025 Antonino Scordino
 # Copyright (C) 2024-2025 Souhrud Reddy
 #
 # SPDX-License-Identifier: Apache-2.0
 #
 
-name: "Crave Builder (self-hosted)"
+name: Crave Builder(self-hosted)
 on:
   workflow_dispatch:
-    # Various inputs to simplify usage of workflow.
     # Various inputs to simplify usage of workflow.
     inputs:
       BASE_PROJECT:
@@ -426,12 +426,12 @@ jobs:
 
           # Verify clone creation succeeded
           if [ ! -d "$PROJECTFOLDER" ]; then
-            echo "❌ ERROR: Crave clone creation failed — $PROJECTFOLDER was not created."
+            echo "âŒ ERROR: Crave clone creation failed â€” $PROJECTFOLDER was not created."
             echo "Listing existing Crave clones for debugging:"
-            crave clone list --json | jq -r '.clones[] | "\(.Name) → \(.\"Cloned At\")"' || true
+            crave clone list --json | jq -r '.clones[] | "\(.Name) â†’ \(.\"Cloned At\")"' || true
             exit 1
           else
-            echo "✅ Crave clone successfully created at $PROJECTFOLDER"
+            echo "âœ… Crave clone successfully created at $PROJECTFOLDER"
           fi
         else
           echo "Not in devspace; creating local project folder instead..."
@@ -440,7 +440,7 @@ jobs:
 
         echo "Post-creation check:"
         ls -al /crave-devspaces || true
-        ls -al "$PROJECTFOLDER" || echo "⚠️ Project folder missing!"
+        ls -al "$PROJECTFOLDER" || echo "âš ï¸ Project folder missing!"
         
       # Check-out in order to access the repository's files.
     - name: Check-out to repository
