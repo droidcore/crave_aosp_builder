@@ -1,4 +1,3 @@
-#
 # Copyright (C) 2024-2025 Antonino Scordino
 # Copyright (C) 2024-2025 Souhrud Reddy
 #
@@ -8,6 +7,7 @@
 name: "Crave Builder (self-hosted)"
 on:
   workflow_dispatch:
+    # Various inputs to simplify usage of workflow.
     # Various inputs to simplify usage of workflow.
     inputs:
       BASE_PROJECT:
