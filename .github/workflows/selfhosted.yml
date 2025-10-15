@@ -5,14 +5,65 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-name: Crave Builder (self-hosted)
+name: Crave Builder(self-hosted)
 on:
   workflow_dispatch:
+    # Various inputs to simplify usage of workflow.
     inputs:
-      CRAVE_CMD:
-        description: 'The commands for running crave'
+      BASE_PROJECT:
+        description: 'Choose a base project:'
         required: true
-        default: 'curl -LSs https://github.com/droidcore/ssc/raw/refs/heads/main/crave.sh | bash -'
+        default: 'LineageOS 22.1'
+        type: choice
+        options:
+          - 'LineageOS 20.0'
+          - 'LineageOS 21.0'
+          - 'LineageOS 22.1'
+          - 'ArrowOS 13.1'
+          - 'DerpFest 14.0'
+          - 'CipherOS 14'
+          - 'PixelOS 15'
+          - 'RisingOS 15 Revived'
+          - 'LineageOS 18.1'
+          - 'LineageOS 16.0'
+          - 'CyanogenMOD 14.1'
+          - 'AOSP'
+      BUILD_DIFFERENT_ROM:
+        description: "Command to initialize a different 'repo' project:"
+        required: true
+        default: "repo init -u https://github.com/Lunaris-AOSP/android -b 16 --git-lfs"
+      REMOVALS:
+        description: "Folders to be removed before syncing:"
+        required: false
+      LOCAL_MANIFEST:
+        description: "Personal local manifest [repository or raw]:"
+        required: true
+        default: 'https://github.com/droidcore/local_manifest'
+      LOCAL_MANIFEST_BRANCH:
+        description: "Personal local manifest's branch:"
+        required: false
+        default: 'lineages-23.0'
+      DEVICE_NAME:
+        description: "Device's codename:"
+        required: true
+        default: "peridot"
+      PRODUCT_NAME:
+        description: "Product to build:"
+        required: true
+        default: "peridot"
+      BUILD_COMMAND:
+        description: 'Command to be used for compiling:'
+        required: true
+        default: 'm lunaris'
+      BUILD_TYPE:
+        description: 'Type of build:'
+        required: true
+        default: 'user'
+        type: choice
+        options: 
+        - 'eng'
+        - 'userdebug'
+        - 'user' 
       CLEAN_BUILD:
         description: 'Build with a clean workspace?'
         required: true
@@ -35,12 +86,12 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y tmux
 
+      # Download and configure 'crave'.
     - name: Configure the 'crave' environment
-      shell: bash
       run: |
         echo "DCDEVSPACE status: ${DCDEVSPACE}"
-        if [[ "$DCDEVSPACE" == *1* ]]; then
-          echo 'No need to set up crave, we are already running in devspace!'
+        if [[ $DCDEVSPACE == *1* ]]; then
+        echo 'No need to set up crave, we are already running in devspace!'
         else
           mkdir ${HOME}/bin/
           curl -s https://raw.githubusercontent.com/accupara/crave/master/get_crave.sh | bash -s --
@@ -54,25 +105,24 @@ jobs:
         CRAVE_TOKEN: ${{  secrets.CRAVE_TOKEN  }}
 
     - name: Run crave devspace
-      shell: bash
       run: |
-        crave ${{ secrets.CRAVE_FLAGS }} devspace -- "echo 'Looking for runner...'
-          if [ -f actions-runner/run.sh ]; then
-            echo 'Runner found! Restarting it...'
+        crave ${{ secrets.CRAVE_FLAGS }} devspace -- "echo "Looking for runner..."
+          # Look for whether there's a runner folder set up
+          if [ -f actions-runner/run.sh ] ; then
+            echo "Runner found! Restarting it..."
           else
-            echo 'Error! Runner not found!'
+            echo "Error! Runner not found!"
             exit 1
           fi
 
-          if tmux has-session -t ghactions; then 
-            echo 'Runner is already Running'
-          else 
-            tmux kill-session -t ghactions || true
-            tmux new-session -d -s ghactions 
-            tmux send-keys -t ghactions './actions-runner/run.sh' Enter 
-            echo 'Runner Started'
-          fi "
-
+        if tmux has-session -t ghactions; then 
+          echo "Runner is already Running" 
+        else 
+          tmux kill-session -t ghactions;
+          tmux new-session -d -s ghactions 
+          tmux send-keys -t ghactions './actions-runner/run.sh' Enter 
+          echo "Runner Started"
+        fi "
   prepare:
     name: Prepare for Building
     runs-on: ubuntu-latest
@@ -81,7 +131,6 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Check Credentials
-      shell: bash
       run: |
         if [[ -z "${{ secrets.CRAVE_TOKEN }}" || -z "${{ secrets.CRAVE_USERNAME }}" ]]; then
           echo "Crave Credentials Not Configured! Exiting..."
@@ -91,42 +140,85 @@ jobs:
 
     - name: Set Project variables
       id: proj-variables
-      shell: bash
       run: |
         case "${{ github.event.inputs.BASE_PROJECT }}" in
-          # (cases unchanged)
+        "ArrowOS 13.1")
+          export PROJECTFOLDER="/crave-devspaces/Arrow13"
+          export PROJECTID="73"
+          export REPO_INIT="repo init -u https://github.com/ArrowOS/android_manifest.git -b arrow-13.1 --depth=1"
+        ;;
+        "DerpFest 14.0")
+          export PROJECTFOLDER="/crave-devspaces/DerpFest14"
+          export PROJECTID="64"
+          export REPO_INIT="repo init -u https://github.com/DerpFest-AOSP/manifest.git -b 14 --depth=1"
+        ;;
+        "LineageOS 21.0")
+          export PROJECTFOLDER="/crave-devspaces/Lineage21"
+          export PROJECTID="72"
+          export REPO_INIT="repo init -u https://github.com/LineageOS/android.git -b lineage-21.0 --git-lfs --depth=1"
+        ;;
+        "LineageOS 22.1")
+          export PROJECTFOLDER="/crave-devspaces/Lineage22"
+          export PROJECTID="93"
+          export REPO_INIT="repo init -u https://github.com/accupara/los22.git -b lineage-22.1 --git-lfs --depth=1"
+        ;;
+        "LineageOS 20.0")
+          export PROJECTFOLDER="/crave-devspaces/Lineage20"
+          export PROJECTID="36"
+          export REPO_INIT="repo init -u https://github.com/accupara/los20.git -b lineage-20.0 --git-lfs --depth=1"
+        ;;
+        "CipherOS 14")
+          export PROJECTFOLDER="/crave-devspaces/Cipher14"
+          export PROJECTID="79"
+          export REPO_INIT="repo init -u https://github.com/CipherOS/android_manifest.git -b fourteen --git-lfs --depth=1"
+        ;;
+        "PixelOS 15")
+          export PROJECTFOLDER="/crave-devspaces/Pixel15"
+          export PROJECTID="82"
+          export REPO_INIT="repo init -u https://github.com/PixelOS-AOSP/manifest.git -b fifteen --git-lfs --depth=1"
+        ;;
+        "RisingOS 15 Revived")
+          export PROJECTFOLDER="/crave-devspaces/Rising15"
+          export PROJECTID="86"
+          export REPO_INIT="repo init -u https://github.com/RisingOS-Revived/android.git -b fifteen --git-lfs --depth=1"
+        ;;
+        "LineageOS 18.1")
+          export PROJECTFOLDER="/crave-devspaces/Lineage18"
+          export PROJECTID="85"
+          export REPO_INIT="repo init -u https://github.com/accupara/los18.1.git -b lineage-18.1 --git-lfs --depth=1"
+        ;;
+        "LineageOS 16.0")
+          export PROJECTFOLDER="/crave-devspaces/Lineage16"
+          export PROJECTID="81"
+          export REPO_INIT="repo init -u https://github.com/accupara/los16.git -b lineage-16.0 --git-lfs --depth=1"
+        ;;
+        "CyanogenMOD 14.1")
+          export PROJECTFOLDER="/crave-devspaces/Cyanogen14"
+          export PROJECTID="83"
+          export REPO_INIT="repo init -u https://github.com/accupara/los-cm14.1.git -b cm-14.1 --git-lfs --depth=1"
+        ;;
+        "AOSP")
+          export PROJECTFOLDER="/crave-devspaces/AOSP"
+          export PROJECTID="35"
+          export REPO_INIT="repo init -u https://android.googlesource.com/platform/manifest.git -b master --git-lfs --depth=1"
+        ;;
         esac
 
-        if [[ "${{ github.event.inputs.PRODUCT_NAME }}" == *_* ]] &&            [[ "${{ github.event.inputs.PRODUCT_NAME }}" != gsi_* ]] &&            [[ "${{ github.event.inputs.PRODUCT_NAME }}" != sdk_* ]] &&            [[ "${{ github.event.inputs.PRODUCT_NAME }}" != *_sprout ]] &&            [[ "${{ github.event.inputs.PRODUCT_NAME }}" != Mi439_* ]] &&            [[ "${{ github.event.inputs.PRODUCT_NAME }}" != Mi8937_* ]]; then
+        if [[ ${{ github.event.inputs.PRODUCT_NAME }} == *_* ]] && [[ ${{ github.event.inputs.PRODUCT_NAME }} != gsi_* ]] && [[ ${{ github.event.inputs.PRODUCT_NAME }} != sdk_* ]] && [[ ${{ github.event.inputs.PRODUCT_NAME }} != *_sprout ]] && [[ ${{ github.event.inputs.PRODUCT_NAME }} != Mi439_* ]] && [[ ${{ github.event.inputs.PRODUCT_NAME }} != Mi8937_* ]]; then
           LUNCH="lunch ${{ github.event.inputs.PRODUCT_NAME }}-${{ github.event.inputs.BUILD_TYPE }}"
-        elif [[ "${{ github.event.inputs.BASE_PROJECT }}" == "LOS22.1" ]] &&              [[ "${{ github.event.inputs.BUILD_DIFFERENT_ROM }}" == "echo 'Build Starting!'" ]]; then
-          LUNCH="riseup ${{ github.event.inputs.PRODUCT_NAME }} ${{ github.event.inputs.BUILD_TYPE }}"
+        elif [[ "${{ github.event.inputs.BASE_PROJECT }}" == "RisingOS 15 Revived" ]] && [[ "${{ github.event.inputs.BUILD_DIFFERENT_ROM }}" == "echo 'Build Starting!'" ]]; then
+            LUNCH="riseup ${{ github.event.inputs.PRODUCT_NAME }} ${{ github.event.inputs.BUILD_TYPE }}"
         else
-          LUNCH="breakfast ${{ github.event.inputs.PRODUCT_NAME }} ${{ github.event.inputs.BUILD_TYPE }}"
+            LUNCH="breakfast ${{ github.event.inputs.PRODUCT_NAME }} ${{ github.event.inputs.BUILD_TYPE }}"
         fi
 
-        if [[ "${{ github.event.inputs.LOCAL_MANIFEST }}" =~ \.xml(/)?$ ]]; then
-          local_manifest_url="${{ github.event.inputs.LOCAL_MANIFEST }}"
-          export local_manifest_url="${local_manifest_url%/}"
-          LOCAL_MANIFEST="mkdir -p .repo/local_manifests && rm -rf .repo/local_manifests/* || true && curl -o .repo/local_manifests/local_manifest.xml ${local_manifest_url}"
-        else
-          export LOCAL_MANIFEST="git clone ${{ github.event.inputs.LOCAL_MANIFEST }} --depth 1 -b ${{github.event.inputs.LOCAL_MANIFEST_BRANCH}} .repo/local_manifests"
-        fi
-
-        echo "PROJECTFOLDER=$PROJECTFOLDER" >> "$GITHUB_OUTPUT"
-        echo "LUNCH=$LUNCH" >> "$GITHUB_ENV"
-        echo "LOCAL_MANIFEST=$LOCAL_MANIFEST" >> "$GITHUB_ENV"
-
-    - name: Display Run Parameters
-      shell: bash
-      run: |
-        echo "Displaying Local Manifests"
-        if [[ -z "${{ secrets.DISPLAY_FALSE }}" ]]; then
-          bash -c "$LOCAL_MANIFEST"
-          cat .repo/local_manifests/*.xml
-        else
-          echo "Displaying is disabled through secrets."
-        fi
+          if [[ "${{ github.event.inputs.LOCAL_MANIFEST }}" =~ \.xml(/)?$ ]]; then
+            local_manifest_url="${{ github.event.inputs.LOCAL_MANIFEST }}"
+            export local_manifest_url="${local_manifest_url%/}"  # remove trailing slash if it exists
+            LOCAL_MANIFEST="mkdir -p .repo/local_manifests && rm -rf .repo/local_manifests/* || true && curl -o .repo/local_manifests/local_manifest.xml ${local_manifest_url}"
+          else
+            export LOCAL_MANIFEST="git clone ${{ github.event.inputs.LOCAL_MANIFEST }} --depth 1 -b ${{github.event.inputs.LOCAL_MANIFEST_BRANCH}} .repo/local_manifests"
+          fi
 
         echo "Building on ${{ github.event.inputs.BASE_PROJECT }} project"
         echo "PROJECTFOLDER=$PROJECTFOLDER" >> "$GITHUB_OUTPUT"
