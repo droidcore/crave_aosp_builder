@@ -440,7 +440,7 @@ jobs:
       # Set-up a spearate directory for the device.
     - name: Set-up workspace environment
       run: |
-        cd $PROJECTFOLDER
+        cd /crave-devspaces/Lineage22
         mkdir ${{ github.event.inputs.DEVICE_NAME }}
         cd ${{ github.event.inputs.DEVICE_NAME }}
       continue-on-error: true
@@ -503,7 +503,7 @@ jobs:
     - name: Start compilation through 'crave'
       if: ${{ github.event.inputs.BUILD_DIFFERENT_ROM != 'skip' }}
       run: |
-        cd $PROJECTFOLDER
+        cd /crave-devspaces/Lineage22
         
         jq '.projects = []' ~/crave.conf > tmp && mv tmp ~/crave.conf
         if [ "${{ github.event.inputs.CLEAN_BUILD }}" == "yes" ]; then
